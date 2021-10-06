@@ -69,12 +69,12 @@ TV(f) &= f^TLf \\
 &=\sum_{i \in N}\sum_{j \in N}\omega_{ij}f_i^2-\omega_{ij}f_if_j\\
 &=\frac{1}{2}(\sum_{i \in N}\sum_{j \in N}\omega_{ij}f_i^2+\sum_{i \in N}\sum_{j \in N}\omega_{ij}f_j^2)-\sum_{i \in N}\sum_{j \in N}\omega_{ij}f_if_j\\
 &=\frac{1}{2}\sum_{i \in N}\sum_{j \in N}\omega_{ij}f_i^2+\omega_{ij}f_j^2-2\omega_{ij}f_if_j\\
-&=\frac{1}{2}\sum_{i \in N}\sum_{j \in N}\omega_{ij}(fi-fj)^2\\
+&=\frac{1}{2}\sum_{i \in N}\sum_{j \in N}\omega_{ij}(f_i-f_j)^2\\
 &= \sum_{e_{ij} \in E}(f_i-f_j)^2
 \end{align}
 $$
 
-* 其中$e_{ij}$表示连接节点$i.j$的无向边
+* 其中$e_{ij}$表示连接节点$i,j$的无向边
 * 总变差对每条边信号的差值进行加和，刻画图整体的平滑程度
 
 ### 拉普拉斯矩阵的特征值与特征向量
