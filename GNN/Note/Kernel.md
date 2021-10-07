@@ -50,7 +50,7 @@ $$
 $$
 e^x=\sum_{n=0}^{\infty}\frac{x^n}{n!}
 $$
-对高斯核函数进行展开
+考虑在一维下，对高斯核函数进行展开
 $$
 \begin{align}
 K(x,y)&=exp(-\gamma||x-y||^2)\\
