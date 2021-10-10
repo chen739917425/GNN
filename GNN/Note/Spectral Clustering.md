@@ -54,7 +54,7 @@ $$
 
 
 
-### 谱聚类算法
+### 图切割
 
 定义两个子集$A,B\in V,A\cap B=\empty$
 
@@ -74,9 +74,9 @@ $$
 RatioCut(A1,A2,\cdots,A_k)=\frac{1}{2}\sum_{i=1}^k\frac{C(A_i,\bar{A_i})}{|A_i|}
 $$
 
-定义$h_j=\begin{pmatrix}h_{1,j}\\h_{2,j}\\\cdots\\h_{n,j}\end{pmatrix}$
+定义$h_i=\begin{pmatrix}h_{i,1}\\h_{i,2}\\\cdots\\h_{i,n}\end{pmatrix}$
 $$
-h_{i,j}=\begin{cases}\frac{1}{\sqrt{|A_j|}}&if\quad v_i \in A_j\\0&otherwise\end{cases}
+h_{i,j}=\begin{cases}\frac{1}{\sqrt{|A_i|}}&if\quad v_j \in A_i\\0&otherwise\end{cases}
 $$
 其中，$i\in [1,n], j\in [1,k]$
 
@@ -85,12 +85,12 @@ $$
 \begin{align}
 h_i^TLh_i&=\frac{1}{2}\sum_{x=1}^{n}\sum_{y=1}^{n}w_{xy}(h_{ix}-h_{iy})^2\\
 &=\frac{1}{2}(\sum_{x\in A_i}\sum_{y\notin A_i}w_{xy}\frac{1}{|A_i|}+\sum_{x\notin A_i}\sum_{y\in A_i}w_{xy}\frac{1}{|A_i|})\\
-&=\frac{1}{2}(cut(A,\bar{A})\frac{1}{|A_i|}+cut(\bar{A},A_i)\frac{1}{|A_i|})\\
-&=\frac{cut(A,\bar{A})}{|A_i|}
+&=\frac{1}{2}(cut(A_i,\bar{A_i})\frac{1}{|A_i|}+cut(\bar{A_i},A_i)\frac{1}{|A_i|})\\
+&=\frac{cut(A_i,\bar{A_i})}{|A_i|}
 \end{align}
 $$
 
-令$H\in R^{n\times k}$表示由$k$个列向量$h_j,j\in[1,k]$构成的矩阵，则有
+令$H\in R^{n\times k}$表示由$k$个列向量$h_i,i\in[1,k]$构成的矩阵，则有
 $$
 \begin{align}
 RatioCut(A1,A2,\cdots,A_k)&=\frac{1}{2}\sum_{i=1}^k\frac{C(A_i,\bar{A_i})}{|A_i|}\\
@@ -106,8 +106,70 @@ s.t.\quad H^TH=I
 $$
 由于该优化问题为NP，考虑近似求解
 
-
+$L$是实对称矩阵，由瑞利商定理可知，$H$应取$L$最小的$k$个特征值对应的特征向量为列向量
 
 
 #### Ncut
 
+最小化$Ncut$，即在最小化切图代价的同时，最大化每个簇内的权重
+$$
+NCut(A1,A2,\cdots,A_k)=\frac{1}{2}\sum_{i=1}^k\frac{C(A_i,\bar{A_i})}{vol(A_i)}
+$$
+定义$h_i=\begin{pmatrix}h_{i,1}\\h_{i,2}\\\cdots\\h_{i,n}\end{pmatrix}$
+$$
+h_{i,j}=\begin{cases}\frac{1}{\sqrt{vol(A_i)}}&if\quad v_j \in A_i\\0&otherwise\end{cases}
+$$
+类似地，推导可得
+$$
+h_i^TLh_i=\frac{cut(A_i,\bar{A_i})}{vol(A_i)}
+$$
+令$H\in R^{n\times k}$表示由$k$个列向量$h_i,i\in[1,k]$构成的矩阵，优化目标仍然为
+$$
+tr(H^TLH)
+$$
+但此时约束为$H^TDH=I$
+$$
+h_i^TDh_i=\sum_{j=1}^{n}h_{ij}^2d_j=\sum_{v_j\in A_i}\frac{d_j}{vol(A_i)}=\frac{\sum_{v_j\in A_i}d_j}{vol(A_i)}=\frac{vol(A_i)}{vol(A_i)}=1
+$$
+因此，优化问题为
+$$
+argmin_H\quad tr(H^TLH)\\
+s.t.\quad H^TDH=I
+$$
+设$F=D^{\frac{1}{2}}H$，则优化问题转为
+$$
+argmin_H\quad tr(F^TD^{-\frac{1}{2}}LD^{-\frac{1}{2}}F)\\
+s.t.\quad F^TF=I
+$$
+类似地，$F$应取$L_{sym}=D^{-\frac{1}{2}}LD^{-\frac{1}{2}}$最小的$k$个特征值对应的特征向量为列向量
+
+### 谱聚类算法
+
+输入：样本集$X\in R^{m\times n}$，分类的簇数$k$
+
+输出：簇划分$A_1,A_2,\cdots,A_k$
+
+* 根据相似性，计算得到邻接矩阵$W\in R^{n\times n}$
+
+* 计算度矩阵$D$和拉普拉斯矩阵$L$（或$L_{sym}$)
+
+* 对拉普拉斯矩阵的进行特征分解，取前$k$小的特征值对应的特征向量，构成矩阵$H\in R^{n\times k}$
+
+* 令$y_i\in R^k$表示$H$第$i$行的向量，对$y_i,i\in[1,n]$进行标准化
+* 对新样本集$Y=\{y_1,y_2,\cdots,y_n\}$进行一次传统的聚类（如K-Means)
+* 得到簇的划分$A_i=\{x_j|y_j\in C_i\},i\in [1,k]$
+
+### 优劣
+
+#### 优点
+
+* 基于谱图理论，能在任意形状的样本空间上聚类且收敛于全局最优解
+
+* 对于处理稀疏数据比较有效
+* 由于降维，复杂度比传统聚类优秀
+
+#### 缺点
+
+* 聚类效果依赖于相似性的度量方法
+* 不适用于簇类别较多的聚类问题
+* 不适用于各簇之间样本数量差别很大的聚类问题

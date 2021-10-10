@@ -59,6 +59,25 @@ $$
 $$
 
 * 其中$D$为节点度数的对角阵，$W$为邻接矩阵，$L=(D-W)$为拉普拉斯矩阵
+
+#### 标准化拉普拉斯矩阵
+
+$$
+L_{sym}=D^{-\frac{1}{2}}LD^{-\frac{1}{2}}
+$$
+
+$$
+L_{sym\ ij}=\begin{cases}
+1&if\quad i=j\\
+-\frac{1}{\sqrt{deg(v_i)deg(v_j)}}&if\quad e_{ij}\in E\\
+0&otherwise
+\end{cases}
+$$
+
+
+
+### 图的总变差
+
 * 定义$TV(f)$为图的总变差
 
 
