@@ -126,7 +126,10 @@ P=\alpha(I-(1-\alpha)A')^{-1}
 $$
 对于所有的**带标签节点**$v\in \mathcal{L}$，定义一个衡量influence conflict程度的Totoro指标
 $$
-T_v=\mathbb{E}_{x\sim P_v}[\sum_{j\in[1,k],j\ne y_v}\frac{1}{|C_j|}\sum_{i\in C_j}P_{i,x}]
+\begin{align}
+T_v&=\mathbb{E}_{x\sim P_v}[\sum_{j\in[1,k],j\ne y_v}\frac{1}{|C_j|}\sum_{i\in C_j}P_{i,x}]\\
+&=\sum_{x\in \mathcal{V}}P_{v,x}[\sum_{j\in[1,k],j\ne y_v}\frac{1}{|C_j|}\sum_{i\in C_j}P_{i,x}]
+\end{align}
 $$
 $T_v$越大，表示节点$v$受到的影响冲突越强烈，说明节点$v$越接近分类边界，反之则代表$v$越接近类中心，远离边界
 
@@ -190,11 +193,62 @@ $$
 
 在large-scale graph上，主要需要解决两个问题：（1）如何计算PageRank矩阵P （2）如何训练模型
 
-计算PageRank矩阵$P$
+1）计算PageRank矩阵$P$
 
+* 使用**PPRGo**方法，求出近似的PageRank矩阵$\hat{P}$，以及对应的权重$\hat{w}$
 
-
-训练模型
+2）训练模型
 $$
 g'=softmax(\hat{P}\mathcal{F'}(X,\theta'))
 $$
+其中
+
+* $\mathcal{F'}$是一个线性层或MLP，$\theta'$是其参数，输出每个节点的embedding（即指示概率分布的向量）
+* 对$\mathcal{F'}$的输出使用$\hat{P}$再进行一次聚集，对结果softmax后得到$g'$的最终输出
+
+将$g',\hat{w}$替换原来的$g,w$，即可得到在大规模图上的损失函数$L_L$
+
+
+
+## 实验
+
+
+
+#### 在极度拓扑不平衡的图上
+
+![](image7.png)
+
+
+
+![](image8.png)
+
+
+
+#### 在同时具有TINL和QINL的图上
+
+
+
+![](image9.png)
+
+* 其中，每个小类的标签数量都取$n_i$，每个大类的标签数量取$\rho\times n_i$
+
+* RW，FOCAL，CB是主流泛用的解决数量不平衡的方法；DR-GCN，RA-GCN，G-SMOTE是对图特化的解决数量不平衡的方法
+
+
+
+#### 在大规模图上
+
+![](image10.png)
+
+### 模型对图拓扑不平衡的敏感性
+
+![](image11.png)
+
+
+
+### 模型局限性
+
+* 该方法比较适合同构图，对于异构图还需要进一步改进
+
+* 在图的连通性较差、数据的标签率极低时，该方法对模型的改善效果不佳（主要是由于定位节点的拓扑位置的信息不足）
+
