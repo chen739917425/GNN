@@ -8,7 +8,7 @@ RL可以被形式化地描述为 一个agent在一个环境中进行一系列决
 
 RL有两个关键
 
-* agent学习好的行为，这意味着它会增量式地修改和获取新的行为和技能
+* agent学习好的行为，它会增量式地修改和获取新的行为和技能
 * 不同于动态规划需要全部的环境信息作为先验，RL使用试错经验（**trial-and-error experience**），不需要完整的信息或控制环境，只需要能和环境交互、搜集信息即可
 
 RL分为在线和离线两种设定
@@ -168,17 +168,15 @@ Off-policy将目标策略和行为策略分开，可以在保持探索的同时�
 
 ## Value-based methods for deep RL
 
-### Q-learning
-
-#### Bellman方程
+### Bellman方程
 
 $V$值函数的Bellman方程
 $$
 \begin{align}
 V^\pi(s)&=\mathbb{E}[\sum_{k=0}^\infty\gamma^{k}r_{t+k}|s_t=s,\pi]\\
 &=\mathbb{E}[r_t+\gamma\sum_{k=0}^\infty\gamma^{k}r_{t+1+k}|s_t=s,\pi]\\
-&=\sum_{a\in\mathcal{A}}\Pi(s,a)\sum_{s'\in\mathcal{S}}P(s'|s,a)\left(R(s,a,s')+\gamma\mathbb{E}\left[\sum_{k=0}^{\infty}\gamma^kr_{t+1+k}|s_{t+1}=s',\pi\right]\right)\\
-&=\sum_{a\in\mathcal{A}}\Pi(s,a)\sum_{s'\in\mathcal{S}}P(s'|s,a)\left(R(s,a,s')+\gamma V^{\pi}(s')\right)
+&=\sum_{a\in\mathcal{A}}\pi(s,a)\sum_{s'\in\mathcal{S}}P(s'|s,a)\left(R(s,a,s')+\gamma\mathbb{E}\left[\sum_{k=0}^{\infty}\gamma^kr_{t+1+k}|s_{t+1}=s',\pi\right]\right)\\
+&=\sum_{a\in\mathcal{A}}\pi(s,a)\sum_{s'\in\mathcal{S}}P(s'|s,a)\left(R(s,a,s')+\gamma V^{\pi}(s')\right)
 \end{align}
 $$
 $Q$值函数的Bellman方程
@@ -214,7 +212,7 @@ $$
 Q^*(s,a)=\sum_{s'\in\mathcal{S}}P(s'|s,a)\left(R(s,a,s')+\gamma\max_{a'\in\mathcal{A}}Q^{*}(s',a')\right)
 $$
 
-#### basic Q-learning
+### Q-learning
 
 基础版本的Q-learning利用上式维护一张$Q$值表，通过与环境交互，不断更新$Q(s,a)$的值，直到收敛
 
@@ -267,6 +265,10 @@ DQN沿用了NFQ的思想，并采用了一些启发式的方法来缓解上述�
 
 * 目标$Y^Q_k$中的$Q(s',a';\theta_k)$替换为$Q(s',a';\theta^-_k)，$每$C\in\mathbb{N}$次迭代$\theta^-_k$才用$\theta^-_k=\theta_k$更新一次，即$C$次迭代中$Y^Q_k$保持固定
 
+$$
+Y^{DDQN}_k=r+\gamma \max_{a'\in\mathcal{A}}Q(s',a';\theta_k^-)
+$$
+
 * 使用了replay memory，通过$\epsilon-greedy$策略来搜集经验，并保留最后$N_{replay}\in\mathbb{N}$步的信息。每次更新，从replay memory中随机抽取一个元组$\langle s,a,r,s'\rangle$的集合（称为一个mini-batch)，进行训练，更新参数
 
 ![](figure4.1.png)
@@ -291,11 +293,36 @@ $$
 $$
 Q(s,a)=V(s)+A(s,a)
 $$
-然而这样建模，会失去辨识性，即神经网络无法辨识哪个分支是$V$值函数，哪个是优势函数
+然而这样建模，会失去辨识性，即神经网络无法辨识哪个分支是$V$值函数，哪个分支是优势函数
+
+为解决上述问题，提出如下定义
 $$
-Q(s,a;\theta^{(1)},\theta^{(2)},\theta^{(3)})=V(s;\theta^{(1)},\theta^{(3)})+(A(s,a;\theta^{(1)},\theta^{(2)})-\max_{a'\in\mathcal{A}}
+Q(s,a;\theta^{(1)},\theta^{(2)},\theta^{(3)})=V(s;\theta^{(1)},\theta^{(3)})+(A(s,a;\theta^{(1)},\theta^{(2)})-\max_{a'\in\mathcal{A}}A(s,a';\theta^{(1)},\theta^{(2)}))
 $$
 
+这样，对于$a^*=\mathop{\arg\max}_{a'\in\mathcal{A}}Q(s,a';\theta^{(1)},\theta^{(2)},\theta^{(3)})$，可以得到$Q(s,a^*;\theta^{(1)},\theta^{(2)},\theta^{(3)})=V(s;\theta^{(1)},\theta^{(3)})$
+
+即强制使选择的动作$a^*$的优势函数为0
+
+但在实践中，一般采用如下方法
+$$
+Q(s,a;\theta^{(1)},\theta^{(2)},\theta^{(3)})=V(s;\theta^{(1)},\theta^{(3)})+(A(s,a;\theta^{(1)},\theta^{(2)})-\frac{1}{|\mathcal{A}|}A(s,a';\theta^{(1)},\theta^{(2)}))
+$$
+上式虽然丢失了$V$和$A$原始的语义，但可以获得更好的稳定性，优势函数的变化只要跟得上均值即可
+
+这种方法只是修改了拟合$Q$值函数的神经网络的结构，因此可以直接用在DQN或DDQN上
 
 ![](figure4.2.png)
 
+## Policy gradient methods for deep RL
+
+### Stochastic policy gradient
+
+从给定状态$s_0$出发，使用随机策略$\pi$，奖励期望如下
+$$
+V^\pi(s_0)=\int_{\mathcal{S}}\rho^{\pi}(s)\int_{\mathcal{A}}\pi(s,a)R'(s,a)\,da\,ds
+$$
+其中
+
+* $\rho^{\pi}(s)=\sum_{t=0}^\infty\gamma^tP$
+* $$
