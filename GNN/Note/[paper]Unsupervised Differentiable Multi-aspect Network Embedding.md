@@ -12,7 +12,7 @@ $$
 $$
 其中
 
-* $P_i\in R^d$，是节点$v_i$的目标embedding，$Q_j\in R^d$是节点$v_j$的上下文embedding，$d$为embedding的维数
+* $P_i\in R^d$，是节点$v_i$的center embedding，$Q_j\in R^d$是节点$v_j$的context embedding，$d$为embedding的维数
 * $\langle \cdot,\cdot\rangle $表示内积
 * $N(v_i)$表示$v_i$的上下文窗口中的节点
 * $\mathcal{W}$为随机游走得到的路径集合，$w$表示一条随机游走的路径
@@ -37,7 +37,7 @@ $$
 
 ### 基于上下文的Multi-aspect的图Embedding
 
-给定一个目标节点的embedding $P_i\in R^d$ 和它目前选择的aspect $\delta(v_i)\in\{1,2,\cdots,K\}$，我们的目标是预测它的上下文embedding $\{Q_j^{\delta(v_i)}|v_j\in N(v_i)\}$
+给定一个目标节点的embedding $P_i\in R^d$ 和它目前选择的aspect $\delta(v_i)\in\{1,2,\cdots,K\}$，我们的目标是预测它的context embedding $\{Q_j^{\delta(v_i)}|v_j\in N(v_i)\}$
 
 对于每一条随机游走序列$w$，我们最大化目标
 $$
@@ -99,3 +99,69 @@ $$
 
 ### 建模Aspect间的联系
 
+作者认为，aspect embedding不仅应该体现多样性以捕获各个aspect的固有属性，还应该体现某种程度的相关性以捕获aspect之间共享的公共信息
+
+为此，作者引入了一个新型的aspect正则化框架，称为$reg_{asp}$
+$$
+reg_{asp}=\sum_{i=1}^{K-1}\sum_{j=i+1}^{K}A\_sim(Q_*^{(i)},Q_*^{(j)})
+$$
+其中
+
+* $Q_*^{(i)}\in R^{n\times d}$表示所有节点$v\in\mathcal{V}$在aspect $i$上的embedding构成的矩阵，$|\mathcal{V}|=n$
+* $A\_sim(\cdot,\cdot)$衡量两个aspect embedding矩阵的相似性得分。
+
+$A\_sim(Q_*^{(i)},Q_*^{(j)})$越大意味着两个aspect共享越多的共同信息，反之则意味着两个aspect捕获的是不同的信息。可以通过对所有节点的aspect $i$和$j$的embedding相似度求和得到
+$$
+A\_sim(Q_*^{(i)},Q_*^{(j)})=\sum_{h=1}^{|\mathcal{V}|}f(Q_h^{(i)},Q_h^{(j)})
+$$
+其中$Q_h^{(i)}$表示节点关于aspect $i$的embedding，$f(Q_h^{(i)},Q_h^{(j)})$衡量节点关于aspect $i$和$j$的两个embedding的相似性得分，其具体形式如下
+
+$$
+f(Q_h^{(i)},Q_h^{(j)})=\frac{\langle Q_h^{(i)},Q_h^{(i)}\rangle}{||Q_h^{(i)}||\,||Q_h^{(i)}||},-1\le f(Q_h^{(i)},Q_h^{(j)})\le1
+$$
+由于aspect之间不是完全独立的，我们应该对它们的相互关系进行建模。
+
+为此，作者引入了一个二进制掩码$w_{i,j}^h$，根据两个aspect间的相似性得分有选择性地惩罚它们。更为具体地，先定义二进制掩码为
+$$
+w_{i,j}^h=\begin{cases}&1,&|f(Q_h^{(i)},Q_h^{(j)})|\ge\epsilon\\&0,&\mathrm{otherwise}\end{cases}
+$$
+其中$\epsilon$是一个阈值参数，它控制给定节点的一对aspect embedding之间共享的信息量。
+
+设置较大的$\epsilon$将鼓励aspect embedding彼此相关，而小的$\epsilon$则鼓励aspect的多样性。
+
+将$w$应用到$A\_sim(\cdot,\cdot)$中，得到
+$$
+A\_sim(Q_*^{(i)},Q_*^{(j)})=\sum_{h=1}^{|\mathcal{V}|}w_{i,j}^h|f(Q_h^{(i)},Q_h^{(j)})|
+$$
+结合asp2vec的损失函数和aspect正则损失，得到最终的损失函数
+$$
+\mathcal{L}=\mathcal{L}_{asp2vec}+\lambda\,reg_{asp}
+$$
+
+### 连边预测任务
+
+每个节点有一个center embedding $P_i\in R^d$和$K$个aspect embedding $\{Q_i^{(s)}\in R^d\}_{s=0}^{K}$，共$K+1$个embedding
+
+如下获得每个节点$v_i$的最终embedding
+$$
+U_i=P_i+\frac{1}{K}\sum_{s=1}^KQ_i^{(s)}
+$$
+
+### 拓展到异构图
+
+作者使用meta-path引导的随机游走，并通过下式合并路径中的异质性
+
+$$
+\mathcal{J}^{(w)}_{asp2vec\_het}=\sum_{v_i\in w}\sum_{t\in\mathcal{T}_{\mathcal{V}}}\sum_{v_j\in N_t(v_i)}\sum_{s=1}^Kp(\delta(v_i)=s)\log p(v_j|v_i,p(\delta(v_i)=s))
+$$
+上式针对的是目标节点的aspect不易从本身推断的情况
+
+对于目标节点的aspect可以从其自身信息轻松推断的情况，我们使用仅考虑单aspect的方法来简单建模，如metapath2vec方法：
+$$
+\mathcal{J}_{HetDW}^{(w)}=\sum_{v_i\in w}\sum_{t\in\mathcal{T}_{\mathcal{V}}}\sum_{v_j\in N_t(v_i)}\log p(v_j|v_i)
+$$
+最终的损失函数为
+$$
+\mathcal{L}_{Het}=-\sum_{\mathcal{P}\in\mathcal{S}(\mathcal{P})}\sum_{w\in\mathcal{W}_\mathcal{P}}(\mathcal{J}^{(w)}_{asp2vec\_het}+\mathcal{J}_{HetDW}^{(w)})+\lambda\,reg_{asp}
+$$
+其中$\mathcal{S}(\mathcal{P})$表示所有预先定义的meta-path模式
