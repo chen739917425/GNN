@@ -324,5 +324,22 @@ V^\pi(s_0)=\int_{\mathcal{S}}\rho^{\pi}(s)\int_{\mathcal{A}}\pi(s,a)R'(s,a)\,da\
 $$
 其中
 
-* $\rho^{\pi}(s)=\sum_{t=0}^\infty\gamma^tP$
-* $$
+* $\rho^{\pi}(s)=\sum_{t=0}^\infty\gamma^tPr(s_t=s|s_0,\pi)$表示折扣后的状态分布
+* $R'(s,a)=\int_{s'\in S}T(s,a,s')R(s,a,s')$
+
+对于可导的策略函数$\pi_w$，使用策略梯度理论
+$$
+\nabla_w V^{\pi_w}(s_0)=\int_{\mathcal{S}}\rho^{\pi}(s)\int_{\mathcal{A}}\nabla_w \pi_w(s,a)Q^{\pi_w}(s,a)\,da\,ds
+$$
+使用似然率技巧推导
+$$
+\begin{align}
+\nabla_w V^{\pi_w}(s_0)&=\int_{\mathcal{S}}\rho^{\pi}(s)\int_{\mathcal{A}}\nabla_w \pi_w(s,a)Q^{\pi_w}(s,a)\,da\,ds\\
+&=\int_{\mathcal{S}}\rho^{\pi}(s)\int_{\mathcal{A}}\pi_w(s,a)\frac{\nabla_w \pi_w(s,a)}{\pi_w(s,a)}Q^{\pi_w}(s,a)\,da\,ds\\
+&=\mathbb{E}_{s\sim\rho^{\pi_w},a\sim\pi_w}[\nabla_w(\log \pi_w(s,a))Q^{\pi_w}(s,a)]
+\end{align}
+$$
+上式变为求$\nabla_w(\log \pi_w(s,a))Q^{\pi_w}(s,a)$的期望，我们可以使用蒙特卡洛估计来采样$m$条轨迹，使用经验平均来估算
+$$
+\nabla_w V^{\pi_w}(s_0)\approx \frac{1}{m}\sum_{i=1}^m\nabla_w(\log \pi_w(s,a))Q^{\pi_w}(s,a)
+$$
