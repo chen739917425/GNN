@@ -16,3 +16,10 @@
 
 这种方法不直接优化策略，在策略的近似最优性上缺乏保证
 
+### Advantage Actor-Critic
+
+由基于策略梯度的reinforce算法可得
+
+$$
+\nabla
+$$

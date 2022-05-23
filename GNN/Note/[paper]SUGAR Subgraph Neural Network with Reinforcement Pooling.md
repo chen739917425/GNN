@@ -103,8 +103,7 @@ $$
   $$
   Range(\{k_{e-10},\cdots,k_e\})\le \Delta k
   $$
-
-* 
+  
 
 由于这是一个离散优化问题，本文使用Q-learning方法来学习
 $$

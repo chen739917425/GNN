@@ -28,7 +28,7 @@
   * 人工根据损失随着$K$的增大而减小的图像，选择拐点处作为最佳$K$值
 * Gap statistic
   * $Gap(K)=E(logD_K)-logD_K$
-  * $D_k$为损失，$E(logD_K)$为$logD_k$的期望值，可通过模拟产生
+  * $D_K$为损失，$E(logD_K)$为$logD_K$的期望值，可通过模拟产生
   * $Gap(K)$取得最大值处的$K$为最佳取值
 
 ##### 核K-means
